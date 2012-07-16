@@ -16,6 +16,19 @@
 #include <ostream>
 #include <typeinfo>
 
+// On some platforms, type_info::== isn't consistent across shared-library
+// boundaries. This works around that issue by comparing type_info.name().
+// See https://svn.boost.org/trac/boost/ticket/754
+// and http://stackoverflow.com/q/11479139/344821
+#if (defined(__GNUC__) && __GNUC__ >= 3) \
+ || defined(_AIX) \
+ || (   defined(__sgi) && defined(__host_mips)) \
+ || (defined(__hpux) && defined(__HP_aCC)) \
+ || (defined(linux) && defined(__INTEL_COMPILER) && defined(__ICC))
+#define FLANN_ANY_COMPARE_TYPE_ID_BY_NAME
+#include <cstring>
+#endif
+
 namespace flann
 {
 
@@ -250,7 +263,13 @@ public:
     /// Returns true if the any contains no value.
     bool empty() const
     {
+#ifdef FLANN_ANY_COMPARE_TYPE_ID_BY_NAME
+        return std::strcmp(
+                policy->type().name(), typeid(anyimpl::empty_any).name())
+            == 0;
+#else
         return policy->type() == typeid(anyimpl::empty_any);
+#endif
     }
 
     /// Frees any allocated memory, and sets the value to NULL.
@@ -263,14 +282,22 @@ public:
     /// Returns true if the two types are the same.
     bool compatible(const any& x) const
     {
+#ifdef FLANN_ANY_COMPARE_TYPE_ID_BY_NAME
+        return std::strcmp(policy->type().name(), x.policy->type().name()) == 0;
+#else
         return policy->type() == x.policy->type();
+#endif
     }
 
     /// Returns if the type is compatible with the policy
     template<typename T>
     bool has_type()
     {
+#ifdef FLANN_ANY_COMPARE_TYPE_ID_BY_NAME
+        return std::strcmp(policy->type().name(), typeid(T).name()) == 0;
+#else
         return policy->type() == typeid(T);
+#endif
     }
 
     const std::type_info& type() const
