@@ -8,6 +8,39 @@ add_dependencies(tests flann_gtests)
 add_dependencies(test flann_gtest)
 add_dependencies(test tests)
 
+# Include gtest library as an external project:
+# http://stackoverflow.com/a/9695234/344821
+
+# Enable ExternalProject CMake module
+INCLUDE(ExternalProject)
+
+# Set default ExternalProject root directory
+SET_DIRECTORY_PROPERTIES(PROPERTIES EP_PREFIX ${CMAKE_BINARY_DIR}/ThirdParty)
+
+# Add gtest
+ExternalProject_Add(
+    googletest
+    SVN_REPOSITORY http://googletest.googlecode.com/svn/trunk/
+    TIMEOUT 10
+    # Force separate output paths for debug and release builds to allow easy
+    # identification of correct lib in subsequent TARGET_LINK_LIBRARIES commands
+    CMAKE_ARGS -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG:PATH=DebugLibs
+    -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE:PATH=ReleaseLibs
+    -Dgtest_force_shared_crt=ON
+    # Disable install step
+    INSTALL_COMMAND ""
+    # Wrap download, configure and build steps in a script to log output
+    LOG_DOWNLOAD ON
+    LOG_CONFIGURE ON
+    LOG_BUILD ON)
+
+# Specify include dir
+ExternalProject_Get_Property(googletest source_dir)
+INCLUDE_DIRECTORIES(${source_dir}/include)
+
+set(GTEST_LIBRARIES "${binary_dir}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${CMAKE_FIND_LIBRARY_SUFFIXES}")
+
+
 set(EXECUTABLE_OUTPUT_PATH ${TEST_OUTPUT_PATH})
 
 if (PYTHON_EXECUTABLE) 
@@ -19,7 +52,7 @@ if (PYTHON_EXECUTABLE)
     flann_download_test_data(brief100K.h5 e1e781c0955917bc2f0a27b6344c2342)
 endif()
 
-if (GTEST_FOUND AND HDF5_FOUND)
+if (HDF5_FOUND)
 	include_directories(${HDF5_INCLUDE_DIR})
 
     set(TEST_LIBRARIES "${HDF5_LIBRARIES}")
@@ -55,7 +88,7 @@ if (GTEST_FOUND AND HDF5_FOUND)
 
 endif()
 
-if (GTEST_FOUND AND HDF5_FOUND AND BUILD_CUDA_LIB)
+if (HDF5_FOUND AND BUILD_CUDA_LIB)
 	set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler;-fPIC;-arch=sm_13" )
     if (NVCC_COMPILER_BINDIR)
         set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};--compiler-bindir=${NVCC_COMPILER_BINDIR}")

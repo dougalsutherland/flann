@@ -109,12 +109,6 @@ if (USE_MPI AND HDF5_IS_PARALLEL)
 endif()
 
 
-find_package(GTest) 
-if (NOT GTEST_FOUND)
-	message(WARNING "gtest library not found, some tests will not be run")
-endif()
-
-
 if (USE_OPENMP)
     find_package(OpenMP)
     if(OPENMP_FOUND)
