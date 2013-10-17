@@ -235,7 +235,7 @@ public:
 
         int count = 0;
         if (params.use_heap==FLANN_True) {
-#pragma omp parallel num_threads(params.cores)
+#pragma omp parallel num_threads(params.cores) if(params.cores != 1)
         	{
         		KNNUniqueResultSet<DistanceType> resultSet(knn);
 #pragma omp for schedule(static) reduction(+:count)
@@ -250,7 +250,7 @@ public:
         	}
         }
         else {
-#pragma omp parallel num_threads(params.cores)
+#pragma omp parallel num_threads(params.cores) if(params.cores != 1)
         	{
         		KNNResultSet<DistanceType> resultSet(knn);
 #pragma omp for schedule(static) reduction(+:count)
@@ -288,7 +288,7 @@ public:
 
 		int count = 0;
 		if (params.use_heap==FLANN_True) {
-#pragma omp parallel num_threads(params.cores)
+#pragma omp parallel num_threads(params.cores) if(params.cores != 1)
 			{
 				KNNUniqueResultSet<DistanceType> resultSet(knn);
 #pragma omp for schedule(static) reduction(+:count)
@@ -307,7 +307,7 @@ public:
 			}
 		}
 		else {
-#pragma omp parallel num_threads(params.cores)
+#pragma omp parallel num_threads(params.cores) if(params.cores != 1)
 			{
 				KNNResultSet<DistanceType> resultSet(knn);
 #pragma omp for schedule(static) reduction(+:count)

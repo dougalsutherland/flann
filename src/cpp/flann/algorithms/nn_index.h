@@ -320,7 +320,7 @@ public:
     	int count = 0;
 
     	if (use_heap) {
-#pragma omp parallel num_threads(params.cores)
+#pragma omp parallel num_threads(params.cores) if(params.cores != 1)
     		{
     			KNNResultSet2<DistanceType> resultSet(knn);
 #pragma omp for schedule(static) reduction(+:count)
@@ -335,7 +335,7 @@ public:
     		}
     	}
     	else {
-#pragma omp parallel num_threads(params.cores)
+#pragma omp parallel num_threads(params.cores) if(params.cores != 1)
     		{
     			KNNSimpleResultSet<DistanceType> resultSet(knn);
 #pragma omp for schedule(static) reduction(+:count)
@@ -408,7 +408,7 @@ public:
 
 		int count = 0;
 		if (use_heap) {
-#pragma omp parallel num_threads(params.cores)
+#pragma omp parallel num_threads(params.cores) if(params.cores != 1)
 			{
 				KNNResultSet2<DistanceType> resultSet(knn);
 #pragma omp for schedule(static) reduction(+:count)
@@ -427,7 +427,7 @@ public:
 			}
 		}
 		else {
-#pragma omp parallel num_threads(params.cores)
+#pragma omp parallel num_threads(params.cores) if(params.cores != 1)
 			{
 				KNNSimpleResultSet<DistanceType> resultSet(knn);
 #pragma omp for schedule(static) reduction(+:count)
@@ -498,7 +498,7 @@ public:
     	else max_neighbors = std::min(max_neighbors,(int)num_neighbors);
 
     	if (max_neighbors==0) {
-#pragma omp parallel num_threads(params.cores)
+#pragma omp parallel num_threads(params.cores) if(params.cores != 1)
     		{
     			CountRadiusResultSet<DistanceType> resultSet(radius);
 #pragma omp for schedule(static) reduction(+:count)
@@ -513,7 +513,7 @@ public:
     		// explicitly indicated to use unbounded radius result set
     		// and we know there'll be enough room for resulting indices and dists
     		if (params.max_neighbors<0 && (num_neighbors>=size())) {
-#pragma omp parallel num_threads(params.cores)
+#pragma omp parallel num_threads(params.cores) if(params.cores != 1)
     			{
     				RadiusResultSet<DistanceType> resultSet(radius);
 #pragma omp for schedule(static) reduction(+:count)
@@ -534,7 +534,7 @@ public:
     		}
     		else {
     			// number of neighbors limited to max_neighbors
-#pragma omp parallel num_threads(params.cores)
+#pragma omp parallel num_threads(params.cores) if(params.cores != 1)
     			{
     				KNNRadiusResultSet<DistanceType> resultSet(radius, max_neighbors);
 #pragma omp for schedule(static) reduction(+:count)
@@ -604,7 +604,7 @@ public:
     	int count = 0;
     	// just count neighbors
     	if (params.max_neighbors==0) {
-#pragma omp parallel num_threads(params.cores)
+#pragma omp parallel num_threads(params.cores) if(params.cores != 1)
     		{
     			CountRadiusResultSet<DistanceType> resultSet(radius);
 #pragma omp for schedule(static) reduction(+:count)
@@ -621,7 +621,7 @@ public:
 
     		if (params.max_neighbors<0) {
     			// search for all neighbors
-#pragma omp parallel num_threads(params.cores)
+#pragma omp parallel num_threads(params.cores) if(params.cores != 1)
     			{
     				RadiusResultSet<DistanceType> resultSet(radius);
 #pragma omp for schedule(static) reduction(+:count)
@@ -641,7 +641,7 @@ public:
     		}
     		else {
     			// number of neighbors limited to max_neighbors
-#pragma omp parallel num_threads(params.cores)
+#pragma omp parallel num_threads(params.cores) if(params.cores != 1)
     			{
     				KNNRadiusResultSet<DistanceType> resultSet(radius, params.max_neighbors);
 #pragma omp for schedule(static) reduction(+:count)
