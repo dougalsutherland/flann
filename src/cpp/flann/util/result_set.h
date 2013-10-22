@@ -930,6 +930,148 @@ private:
     /** The maximum distance of a neighbor */
     DistanceType radius_;
 };
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+/** Class that stores enough neighbors to cover a total weight for a weighted dataset.
+ *
+ * Uses a sorted array.
+ * Checks that points are unique.
+ *
+ * If le_weight, gives the max # of points covering no more than weight.
+ * Otherwise, gives the fewest points covering no less than weight.
+ * Returns at least min_neighbors no matter the weights.
+ */
+// TODO: make uniqueness check optional
+// We always store the fewest points covering no less than weight during
+// intermediate stages. le_weight only matters at the end, and also when
+// querying size() in between.
+template <typename DistanceType, typename WeightType>
+class QuantileResultSet : public ResultSet<DistanceType>
+{
+public:
+    typedef DistanceIndex<DistanceType> DistIndex;
+
+    QuantileResultSet(const std::vector<WeightType>& weights,
+                      WeightType weight,
+                      size_t min_neighbors,
+                      bool le_weight)
+        :
+            min_neighbors_(min_neighbors),
+            weight_(weight),
+            le_weight_(le_weight),
+            weights_(weights)
+    {
+        dist_index_.reserve(1024);
+        clear();
+    }
+
+
+    ~QuantileResultSet()
+    {
+
+    }
+
+    void clear()
+    {
+        dist_index_.clear();
+        count_ = 0;
+        total_weight_ = 0;
+        worst_distance_ = std::numeric_limits<DistanceType>::max();
+    }
+
+    size_t size() const
+    {
+        return count_ -
+            (le_weight_ && full() && total_weight_ > weight_ ? 1 : 0);
+    }
+
+    bool full() const
+    {
+        return count_ >= min_neighbors_ && total_weight_ >= weight_;
+    }
+
+
+    void addPoint(DistanceType dist, size_t index)
+    {
+        if (full() && dist > worst_distance_) {
+            return;
+        }
+
+        // okay, add this point (unless it's a duplicate)
+        // TODO: if distance is equal to worst_distance_,
+        //       we might end up adding this point then removing it later
+        size_t i;
+        for (i = count_; i > 0; --i) {
+#ifdef FLANN_FIRST_MATCH
+            if ( (dist_index_[i-1].dist_<=dist) && ((dist!=dist_index_[i-1].dist_)||(dist_index_[i-1].index_<=index)) )
+#else
+            if (dist_index_[i-1].dist_<=dist)
+#endif
+            {
+                // Check for duplicate indices
+                size_t j = i - 1;
+                while (dist_index_[j].dist_ == dist) {
+                    if (dist_index_[j].index_ == index) {
+                        return;
+                    }
+                    --j;
+                }
+                break;
+            }
+        }
+        dist_index_.insert(dist_index_.begin() + i, DistIndex(dist, index));
+        ++count_;
+        total_weight_ += weights_[index];
+
+        // do we have more points than we need now?
+        // TODO: occasionally recalculate total_weight to help prevent small
+        //       errors from accumulating?
+        for (; count_ > min_neighbors_; --count_) {
+            WeightType wt = weights_[dist_index_[count_ - 1].index_];
+            if (total_weight_ - wt > weight_) {
+                total_weight_ -= wt;
+            } else {
+                break;
+            }
+        }
+        dist_index_.resize(count_, DistIndex(std::numeric_limits<DistanceType>::max(),-1));
+        worst_distance_ = dist_index_[count_-1].dist_;
+    }
+
+    /**
+     * Copy indices and distances to output buffers
+     * @param indices
+     * @param dists
+     * @param num_elements Number of elements to copy
+     * @param sorted Indicates if results should be sorted
+     */
+    void copy(size_t* indices, DistanceType* dists, size_t num_elements, bool sorted = true)
+    {
+        size_t n = std::min(size(), num_elements);
+        for (size_t i = 0; i < n; ++i) {
+            *indices++ = dist_index_[i].index_;
+            *dists++ = dist_index_[i].dist_;
+        }
+    }
+
+    DistanceType worstDist() const
+    {
+        return worst_distance_;
+    }
+
+private:
+    size_t count_, min_neighbors_;
+    WeightType total_weight_, weight_;
+    bool le_weight_;
+    DistanceType worst_distance_;
+    std::vector<DistIndex> dist_index_;
+    const std::vector<WeightType>& weights_;
+};
+
+
 }
 
 #endif //FLANN_RESULTSET_H

@@ -690,6 +690,85 @@ public:
     }
 
 
+
+    int quantileSearch(const Matrix<ElementType>& queries,
+                       const std::vector<double>& weights,
+                       std::vector< std::vector<size_t> >& indices,
+                       std::vector< std::vector<DistanceType> >& dists,
+                       double weight,
+                       size_t min_neighbors,
+                       bool le_weight,
+                       const SearchParams& params) const
+    {
+        // TODO: support float weights / int indices?
+        // TODO: passing matrices for indices/dists which correspond to max_neighbors
+        // TODO: support heap
+        typedef double WeightType;
+        assert(queries.cols == veclen());
+        assert(!removed_); // TODO: handle weights with removed points
+        assert(weights.size() == size());
+
+        int count = 0;
+
+        if (params.max_neighbors==0) {
+            // This would mean to just count neighbors, but that's not really
+            // possible for quantiles; needs intermediate storage of points to
+            // figure out partial sums of weights.
+            assert(false);
+        }
+        else {
+            if (indices.size() < queries.rows) indices.resize(queries.rows);
+            if (dists.size() < queries.rows) dists.resize(queries.rows);
+
+            if (params.max_neighbors<0) {
+                // search for all neighbors
+#pragma omp parallel num_threads(params.cores)
+                {
+                    QuantileResultSet<DistanceType, WeightType> resultSet(weights, weight, min_neighbors, le_weight);
+#pragma omp for schedule(static) reduction(+:count)
+                    for (int i = 0; i < (int)queries.rows; i++) {
+                        resultSet.clear();
+                        findNeighbors(resultSet, queries[i], params);
+                        size_t n = resultSet.size();
+                        count += n;
+                        indices[i].resize(n);
+                        dists[i].resize(n);
+                        if (n > 0) {
+                            resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+                            indices_to_ids(&indices[i][0], &indices[i][0], n);
+                        }
+                    }
+                }
+            }
+            else {
+                // number of neighbors limited to max_neighbors
+                assert(false);
+                // TODO: write KNNQuantileResultSet
+                /*
+#pragma omp parallel num_threads(params.cores)
+                {
+                    KNNQuantileResultSet<DistanceType> resultSet(weights, min_neighbors, params.max_neighbors);
+#pragma omp for schedule(static) reduction(+:count)
+                    for (int i = 0; i < (int)queries.rows; i++) {
+                        resultSet.clear();
+                        findNeighbors(resultSet, queries[i], params);
+                        size_t n = resultSet.size();
+                        count += n;
+                        if ((int)n>params.max_neighbors) n = params.max_neighbors;
+                        indices[i].resize(n);
+                        dists[i].resize(n);
+                        if (n > 0) {
+                            resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+                            indices_to_ids(&indices[i][0], &indices[i][0], n);
+                        }
+                    }
+                }
+                */
+            }
+        }
+        return count;
+    }
+
     virtual void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams) const = 0;
 
 protected:

@@ -367,6 +367,18 @@ public:
     	return nnIndex_->radiusSearch(queries, indices, dists, radius, params);
     }
 
+    int quantileSearch(const Matrix<ElementType>& queries,
+                       const std::vector<double>& weights,
+                       std::vector< std::vector<size_t> >& indices,
+                       std::vector< std::vector<DistanceType> >& dists,
+                       double weight,
+                       size_t min_neighbors,
+                       bool le_weight,
+                       const SearchParams& params) const
+    {
+        return nnIndex_->quantileSearch(queries, weights, indices, dists, weight, min_neighbors, le_weight, params);
+    }
+
 private:
     IndexType* load_saved_index(const Matrix<ElementType>& dataset, const std::string& filename, Distance distance)
     {
