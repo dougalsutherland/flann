@@ -189,6 +189,8 @@ void flann_set_distance_type(flann_distance_t distance_type, int order)
     flann_distance_type = distance_type;
     flann_distance_order = order;
 }
+enum flann_distance_t flann_get_distance_type() { return flann_distance_type; }
+int flann_get_distance_order() { return flann_distance_order; }
 
 
 template<typename Distance>
