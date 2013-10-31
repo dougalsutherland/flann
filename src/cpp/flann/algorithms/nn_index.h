@@ -698,6 +698,7 @@ public:
                        double weight,
                        size_t min_neighbors,
                        bool le_weight,
+                       bool skip_self,
                        const SearchParams& params) const
     {
         // TODO: support float weights / int indices?
@@ -724,7 +725,7 @@ public:
                 // search for all neighbors
 #pragma omp parallel num_threads(params.cores)
                 {
-                    QuantileResultSet<DistanceType, WeightType> resultSet(weights, weight, min_neighbors, le_weight);
+                    QuantileResultSet<DistanceType, WeightType> resultSet(weights, weight, min_neighbors, le_weight, skip_self);
 #pragma omp for schedule(static) reduction(+:count)
                     for (int i = 0; i < (int)queries.rows; i++) {
                         resultSet.clear();

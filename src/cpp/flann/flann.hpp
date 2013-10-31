@@ -374,9 +374,10 @@ public:
                        double weight,
                        size_t min_neighbors,
                        bool le_weight,
+                       bool skip_self,
                        const SearchParams& params) const
     {
-        return nnIndex_->quantileSearch(queries, weights, indices, dists, weight, min_neighbors, le_weight, params);
+        return nnIndex_->quantileSearch(queries, weights, indices, dists, weight, min_neighbors, le_weight, skip_self, params);
     }
 
 private:

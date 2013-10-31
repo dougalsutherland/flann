@@ -957,11 +957,13 @@ public:
     QuantileResultSet(const std::vector<WeightType>& weights,
                       WeightType weight,
                       size_t min_neighbors,
-                      bool le_weight)
+                      bool le_weight,
+                      bool skip_self)
         :
             min_neighbors_(min_neighbors),
             weight_(weight),
             le_weight_(le_weight),
+            skip_self_(skip_self),
             weights_(weights)
     {
         dist_index_.reserve(1024);
@@ -996,9 +998,10 @@ public:
 
     void addPoint(DistanceType dist, size_t index)
     {
-        if (full() && dist > worst_distance_) {
+        if (full() && dist > worst_distance_)
             return;
-        }
+        if (skip_self_ && dist == 0)
+            return;
 
         // okay, add this point (unless it's a duplicate)
         // TODO: if distance is equal to worst_distance_,
@@ -1065,7 +1068,7 @@ public:
 private:
     size_t count_, min_neighbors_;
     WeightType total_weight_, weight_;
-    bool le_weight_;
+    bool le_weight_, skip_self_;
     DistanceType worst_distance_;
     std::vector<DistIndex> dist_index_;
     const std::vector<WeightType>& weights_;
